@@ -1,7 +1,7 @@
 ## Exploration: scaffold-login-catalogo
 
 ### Current State
-El repositorio sigue greenfield: no existen `.sln`, `.csproj`, autenticación ni pruebas. `script.sql` es la fuente de verdad preliminar para `dbo.Empresa` en la base compartida `db_9c7990_servicedeskdesi`; define `Id bigint identity`, estatus, vigencias y las cuatro columnas de auditoría exactas.
+El repositorio sigue greenfield: no existen `.sln`, `.csproj`, autenticación ni pruebas. `script.sql` es la fuente de verdad preliminar para `dbo.Empresa` en la base compartida `db_9c7990_puntoventadev`; define `Id bigint identity`, estatus, vigencias y las cuatro columnas de auditoría exactas.
 
 El primer vertical slice está limitado a scaffold, login y CRUD MVC/API de Marcas. La arquitectura usa una MVC, una Web API y una base SQL Server compartida, con .NET Framework 4.8, ADO.NET, SPs, OAuth2, FormsAuthentication y `ModelResponse`.
 

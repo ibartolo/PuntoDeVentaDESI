@@ -1,0 +1,6 @@
+2026-09-11 02:02:53.847 -06:00 [INF] AutenticacionService.AutenticarUsuario dev-admin
+2026-09-11 02:04:55.451 -06:00 [INF] PaginaService.ObtenerPaginasPorUsuario 1
+2026-09-11 02:05:04.005 -06:00 [INF] PaginaService.ObtenerPaginasPorUsuario 1
+2026-09-11 02:05:18.388 -06:00 [INF] PaginaService.ObtenerPaginasPorUsuario 1
+2026-09-11 02:05:32.654 -06:00 [INF] PaginaService.ObtenerPaginasPorUsuario 1
+2026-09-11 02:05:32.686 -06:00 [INF] MarcaService.ObtenerMarcas para empresa 1

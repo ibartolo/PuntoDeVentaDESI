@@ -1,0 +1,253 @@
+﻿@model PuntoDeVentaEntities.Inventario.StockMovimientoDTO
+@using System.Collections.Generic
+@{
+    ViewBag.Title = "Inventario";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.1/jquery.validate.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.7/js/dataTables.js"></script>
+<link href="https://cdn.datatables.net/2.3.7/css/dataTables.dataTables.css" rel="stylesheet" />
+
+<div class="form-section">
+    <h3 class="section-title"><i class="fas fa-boxes me-2"></i>Inventario por Sucursal</h3>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label>Sucursal</label>
+                @Html.DropDownList("SucursalId", (IEnumerable<SelectListItem>)ViewBag.Sucursales,
+                    "Seleccione una sucursal", new { @class = "form-select", id = "SucursalId" })
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 table-responsive">
+            <div class="mb-3">
+                <table id="tblStock" class="table"></table>
+            </div>
+        </div>
+    </div>
+
+    <h4 class="section-title"><i class="fas fa-dolly me-2"></i>Registrar movimiento de stock</h4>
+
+    <form id="frmMovimiento" name="frmMovimiento" method="post">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label>Producto</label>
+                    <select id="ProductoId" name="ProductoId" class="form-select"></select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-3">
+                    <label>Tipo</label>
+                    <select id="TipoMovimiento" name="TipoMovimiento" class="form-select">
+                        <option value="ingreso">Ingreso</option>
+                        <option value="ajuste">Ajuste</option>
+                        <option value="devolucion">Devolución</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-3">
+                    <label>Cantidad</label>
+                    <input type="number" id="Cantidad" name="Cantidad" class="form-control" step="0.0001" placeholder="0" />
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label>Motivo</label>
+                    <input type="text" id="Motivo" name="Motivo" class="form-control" maxlength="300" placeholder="Motivo del movimiento" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <input type="button" value="Registrar" class="btn btn-success" onclick="RegistrarMovimientoStock()" />
+                    <a href="/Stock/Index" class="btn btn-warning">Cancelar</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    var tablaStock;
+
+    $(document).ready(function () {
+        tablaStock = new DataTable('#tblStock', {
+            columns: [
+                { data: 'Id', title: 'ID', visible: false },
+                { data: 'ProductoId', title: 'ProductoId', visible: false },
+                { data: 'ProductoNombre', title: 'Producto' },
+                { data: 'SucursalNombre', title: 'Sucursal', visible: false },
+                { data: 'Cantidad', title: 'Existencia' },
+                { data: 'StockMinimo', title: 'Stock mínimo' },
+                {
+                    data: 'BajoMinimo', title: 'Bajo mínimo', render: function (data) {
+                        return data ? '<span class="badge bg-danger">Sí</span>' : '<span class="badge bg-success">No</span>';
+                    }
+                },
+                {
+                    data: 'ProductoId', title: 'Acciones', render: function (data) {
+                        return '<button type="button" class="btn btn-sm btn-outline-primary" onclick="SeleccionarProducto(' + data + ')"><i class="fas fa-dolly"></i> Movimiento</button>';
+                    }
+                }
+            ],
+            language: {
+                url: "/Content/datatables/i18n/es-ES.json"
+            }
+        });
+
+        CargarProductos();
+
+        $("#SucursalId").on("change", function () {
+            ConsultarStockPorSucursal($(this).val());
+        });
+    });
+
+    function CargarProductos() {
+        GetMVC("/Stock/ConsultarProductos", function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+
+            if (result.IsSuccess) {
+                var ddl = $("#ProductoId");
+                ddl.empty();
+                ddl.append('<option value="0">Seleccione un producto</option>');
+                $.each(result.Response, function (i, p) {
+                    ddl.append('<option value="' + p.Id + '">' + p.Nombre + '</option>');
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: result.Message,
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar',
+                    background: 'white',
+                    confirmButtonColor: '#4e73df'
+                });
+            }
+        });
+    }
+
+    function ConsultarStockPorSucursal(sucursalId) {
+        if (!sucursalId || sucursalId === "0") {
+            tablaStock.clear().draw();
+            return;
+        }
+
+        GetMVC("/Stock/ConsultarStockPorSucursal?sucursalId=" + sucursalId, function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+
+            if (result.IsSuccess) {
+                MapingPropertiesDataTable("tblStock", result.Response);
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: result.Message,
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar',
+                    background: 'white',
+                    confirmButtonColor: '#4e73df'
+                });
+            }
+        });
+    }
+
+    function SeleccionarProducto(productoId) {
+        $("#ProductoId").val(productoId);
+        $("#Cantidad").focus();
+    }
+
+    function RegistrarMovimientoStock() {
+        var sucursalId = $("#SucursalId").val();
+        var productoId = $("#ProductoId").val();
+        var cantidad = parseFloat($("#Cantidad").val());
+
+        if (!sucursalId || sucursalId === "0") {
+            Swal.fire({
+                title: 'Validación',
+                text: 'Debe seleccionar una sucursal.',
+                icon: 'warning',
+                confirmButtonText: 'Aceptar',
+                background: 'white',
+                confirmButtonColor: '#4e73df'
+            });
+            return;
+        }
+
+        if (!productoId || productoId === "0") {
+            Swal.fire({
+                title: 'Validación',
+                text: 'Debe seleccionar un producto.',
+                icon: 'warning',
+                confirmButtonText: 'Aceptar',
+                background: 'white',
+                confirmButtonColor: '#4e73df'
+            });
+            return;
+        }
+
+        if (isNaN(cantidad) || cantidad === 0) {
+            Swal.fire({
+                title: 'Validación',
+                text: 'La cantidad no puede ser cero.',
+                icon: 'warning',
+                confirmButtonText: 'Aceptar',
+                background: 'white',
+                confirmButtonColor: '#4e73df'
+            });
+            return;
+        }
+
+        Swal.fire({
+            title: 'Registrando...',
+            text: 'Por favor espere',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        var movimiento = {
+            SucursalId: sucursalId,
+            ProductoId: productoId,
+            TipoMovimiento: $("#TipoMovimiento").val(),
+            Cantidad: cantidad,
+            Motivo: $("#Motivo").val(),
+            Estatus: true
+        };
+
+        PostMVC('/Stock/RegistrarMovimientoStock', movimiento, function (response) {
+            Swal.close();
+
+            if (response.IsSuccess) {
+                Swal.fire({
+                    title: '¡Éxito!',
+                    text: response.Message,
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    background: 'white',
+                    iconColor: '#4e73df'
+                }).then(() => {
+                    $("#Cantidad").val('');
+                    $("#Motivo").val('');
+                    ConsultarStockPorSucursal(sucursalId);
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: response.Message,
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar',
+                    background: 'white',
+                    confirmButtonColor: '#4e73df'
+                });
+            }
+        });
+    }
+</script>

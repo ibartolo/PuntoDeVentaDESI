@@ -2,7 +2,7 @@
 
 ## Intent
 
-El repositorio es greenfield para código; ya existe `script.sql` con la tabla `Empresa` en la base compartida `db_9c7990_servicedeskdesi`. El proyecto queda confirmado como **multiempresa**: una app MVC, una Web API y una única base de datos SQL Server compartida. Se necesita el primer vertical slice ejecutable —scaffold, autenticación consciente de empresa y un catálogo maestro aislado por empresa— para validar la arquitectura prescrita (MVC 5 + Web API 5, .NET Framework 4.8, ADO.NET + SPs, OAuth2 + FormsAuthentication).
+El repositorio es greenfield para código; ya existe `script.sql` con la tabla `Empresa` en la base compartida `db_9c7990_puntoventadev`. El proyecto queda confirmado como **multiempresa**: una app MVC, una Web API y una única base de datos SQL Server compartida. Se necesita el primer vertical slice ejecutable —scaffold, autenticación consciente de empresa y un catálogo maestro aislado por empresa— para validar la arquitectura prescrita (MVC 5 + Web API 5, .NET Framework 4.8, ADO.NET + SPs, OAuth2 + FormsAuthentication).
 
 **Impacto de tenancy**: el aislamiento multiempresa se introduce como propiedad transversal, no como módulo nuevo. Sin CRUD de Empresa ni sucursales; `Empresa` se consume tal como está en `script.sql`, agregando solo `Usuario.EmpresaId bigint NOT NULL` como FK a `Empresa.Id`. Cada Usuario pertenece a exactamente una Empresa y una Empresa puede tener varios Usuarios; no existe tabla intermedia.
 
@@ -69,7 +69,7 @@ Change aditivo (no toca código existente; `Empresa` de `script.sql` no se modif
 ## Dependencies
 
 - Skill `netframework-mvc-webapi` (estructura, ModelResponse, OAuth2+FormsAuthentication).
-- SQL Server 2019 con base `db_9c7990_servicedeskdesi` y tabla `Empresa` ya creada por `script.sql`.
+- SQL Server 2019 con base `db_9c7990_puntoventadev` y tabla `Empresa` ya creada por `script.sql`.
 
 ## Success Criteria
 

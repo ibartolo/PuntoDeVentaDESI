@@ -1,0 +1,393 @@
+﻿@model PuntoDeVentaEntities.Ventas.CancelacionDTO
+@{
+    ViewBag.Title = "Cancelaciones";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.1/jquery.validate.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.7/js/dataTables.js"></script>
+<link href="https://cdn.datatables.net/2.3.7/css/dataTables.dataTables.css" rel="stylesheet" />
+
+<div class="form-section">
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @ViewBag.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+
+    <h3 class="section-title"><i class="fas fa-undo-alt me-2"></i>Cancelaciones / Devoluciones</h3>
+
+    <form id="frmCancelacion" name="frmCancelacion" method="post">
+        @Html.HiddenFor(x => x.Id)
+        @Html.HiddenFor(x => x.CreadoPor)
+        @Html.HiddenFor(x => x.FechaCreacion)
+        @Html.HiddenFor(x => x.ModificadoPor)
+        @Html.HiddenFor(x => x.FechaModificacion)
+        @Html.HiddenFor(x => x.Estatus)
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Sucursal</label>
+                    <select id="SucursalId" name="SucursalId" class="form-control"></select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Venta</label>
+                    <select id="VentaId" name="VentaId" class="form-control" onchange="CargarDetalleVenta()"></select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Tipo</label>
+                    <select id="Tipo" name="Tipo" class="form-control">
+                        <option value="Total">Total</option>
+                        <option value="Parcial">Parcial</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Método de reembolso</label>
+                    <select id="MetodoReembolso" name="MetodoReembolso" class="form-control">
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Transferencia">Transferencia</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label>Motivo</label>
+                    @Html.TextBoxFor(x => x.Motivo, new { @class = "form-control", placeholder = "Motivo de la cancelación" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label>Usuario que autoriza</label>
+                    @Html.TextBoxFor(x => x.UsuarioAutoriza, new { @class = "form-control", placeholder = "Usuario autorizador" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label>Total reembolsado</label>
+                    <input type="number" id="TotalReembolsado" name="TotalReembolsado" class="form-control" min="0" step="0.0001" value="@Model.TotalReembolsado" />
+                </div>
+            </div>
+        </div>
+
+        <hr />
+        <h5 class="section-title"><i class="fas fa-boxes me-2"></i>Productos devueltos</h5>
+
+        <div class="row">
+            <div class="col-md-12 table-responsive">
+                <table class="table table-bordered" id="tblDetalleCancelacion">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Importe</th>
+                            <th>Regresa a stock</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <input type="button" value="Registrar cancelación" class="btn btn-success" onclick="GuardarCancelacion()" />
+                    <a href="/Cancelacion/Cancelacion" class="btn btn-warning">Cancelar</a>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <hr />
+    <h5 class="section-title"><i class="fas fa-list me-2"></i>Historial de Cancelaciones</h5>
+    <div class="row">
+        <div class="col-md-12 table-responsive">
+            <div class="mb-3">
+                <table id="tblCancelacion"></table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var detalle = [];
+
+    $(function () {
+        $("#frmCancelacion").validate({
+            rules: {
+                "SucursalId": { required: true },
+                "VentaId": { required: true }
+            },
+            messages: {
+                "SucursalId": { required: "La sucursal es requerida." },
+                "VentaId": { required: "La venta es requerida." }
+            },
+            errorElement: "span",
+            errorClass: "text-danger",
+            highlight: function (element) {
+                $(element).addClass("is-invalid").removeClass("is-valid");
+            },
+            unhighlight: function (element) {
+                $(element).removeClass("is-invalid").addClass("is-valid");
+            },
+            errorPlacement: function (error, element) {
+                error.insertAfter(element);
+            }
+        });
+    });
+
+    $(document).ready(function () {
+        new DataTable('#tblCancelacion', {
+            columns: [
+                { data: 'Id', title: 'ID', visible: false },
+                { data: 'VentaFolio', title: 'Venta' },
+                { data: 'Tipo', title: 'Tipo' },
+                { data: 'Motivo', title: 'Motivo' },
+                { data: 'UsuarioCancela', title: 'Cancela' },
+                {
+                    data: 'FechaCancelacion', title: 'Fecha', render: function (data) {
+                        return data ? formatDate(data) : '';
+                    }
+                },
+                {
+                    data: 'TotalReembolsado', title: 'Reembolso', render: function (data) {
+                        return formatMoney(data);
+                    }
+                },
+                { data: 'MetodoReembolso', title: 'Método' },
+                {
+                    data: 'Id', title: 'Acciones', render: function (data) {
+                        return '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="VerCancelacion(' + data + ')"><i class="fas fa-eye"></i></button>';
+                    }
+                },
+                { data: 'Estatus', title: 'Estatus', visible: false }
+            ],
+            language: {
+                url: "/Content/datatables/i18n/es-ES.json"
+            }
+        });
+
+        ConsultarSucursales();
+        ConsultarVentas();
+        ConsultarTodasLasCancelaciones();
+        CargarDetalleExistente();
+    });
+
+    function ConsultarSucursales() {
+        GetMVC("/Catalogs/ConsultarTodasLasSucursales", function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+
+            if (result.IsSuccess && result.Response) {
+                var cmb = $("#SucursalId");
+                cmb.empty();
+                cmb.append($('<option>', { value: '', text: '-- Seleccione sucursal --' }));
+                result.Response.forEach(function (s) {
+                    cmb.append($('<option>', { value: s.Id, text: s.Nombre }));
+                });
+            }
+        });
+    }
+
+    function ConsultarVentas() {
+        GetMVC("/Venta/ConsultarTodasLasVentas", function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+
+            if (result.IsSuccess && result.Response) {
+                var cmb = $("#VentaId");
+                cmb.empty();
+                cmb.append($('<option>', { value: '', text: '-- Seleccione venta --' }));
+                result.Response.forEach(function (v) {
+                    cmb.append($('<option>', { value: v.Id, text: v.Folio + ' - ' + formatMoney(v.Total) }));
+                });
+            }
+        });
+    }
+
+    function ConsultarTodasLasCancelaciones() {
+        GetMVC("/Cancelacion/ConsultarTodasLasCancelaciones", function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+
+            if (result.IsSuccess) {
+                MapingPropertiesDataTable("tblCancelacion", result.Response);
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: result.Message,
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar',
+                    background: 'white',
+                    confirmButtonColor: '#4e73df'
+                });
+            }
+        });
+    }
+
+    function CargarDetalleExistente() {
+        var inicial = @Html.Raw(ViewBag.DetalleJson);
+
+        if (inicial && inicial.length > 0) {
+            inicial.forEach(function (d) {
+                detalle.push({
+                    VentaDetalleId: d.VentaDetalleId,
+                    ProductoId: d.ProductoId,
+                    ProductoNombre: d.ProductoNombre || d.ProductoId,
+                    Cantidad: d.Cantidad,
+                    Importe: d.Importe,
+                    RegresaAStock: d.RegresaAStock
+                });
+            });
+
+            RenderDetalle();
+        }
+    }
+
+    function CargarDetalleVenta() {
+        var ventaId = parseInt($("#VentaId").val() || 0);
+        detalle = [];
+
+        if (ventaId <= 0) {
+            RenderDetalle();
+            return;
+        }
+
+        GetMVC("/Venta/ConsultarVentaPorId?id=" + ventaId, function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+            var venta = (result && result.Response) ? result.Response : result;
+
+            if (venta && venta.Detalle) {
+                venta.Detalle.forEach(function (d) {
+                    detalle.push({
+                        VentaDetalleId: d.Id,
+                        ProductoId: d.ProductoId,
+                        ProductoNombre: d.ProductoNombre || d.ProductoId,
+                        Cantidad: d.Cantidad,
+                        Importe: d.Importe,
+                        RegresaAStock: true
+                    });
+                });
+            }
+
+            RenderDetalle();
+        });
+    }
+
+    function RenderDetalle() {
+        var tbody = $("#tblDetalleCancelacion tbody");
+        tbody.empty();
+
+        detalle.forEach(function (d, i) {
+            var tr = $("<tr>");
+            tr.append($("<td>").text(d.ProductoNombre || d.ProductoId));
+
+            var tdCantidad = $("<td>");
+            var inputCantidad = $('<input type="number" class="form-control" min="0" step="0.0001" />');
+            inputCantidad.val(d.Cantidad);
+            inputCantidad.on('change', function () {
+                detalle[i].Cantidad = parseFloat($(this).val() || 0);
+            });
+            tdCantidad.append(inputCantidad);
+            tr.append(tdCantidad);
+
+            tr.append($("<td>").text(formatMoney(d.Importe)));
+
+            var tdStock = $("<td>");
+            var inputStock = $('<input type="checkbox" />');
+            inputStock.prop('checked', d.RegresaAStock === true);
+            inputStock.on('change', function () {
+                detalle[i].RegresaAStock = $(this).is(':checked');
+            });
+            tdStock.append(inputStock);
+            tr.append(tdStock);
+
+            var tdAcciones = $("<td>");
+            var btn = $('<button type="button" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt"></i></button>');
+            btn.on('click', function () {
+                detalle.splice(i, 1);
+                RenderDetalle();
+            });
+            tdAcciones.append(btn);
+            tr.append(tdAcciones);
+
+            tbody.append(tr);
+        });
+    }
+
+    function GuardarCancelacion() {
+        if (!$("#frmCancelacion").valid()) {
+            return;
+        }
+
+        var tipo = $("#Tipo").val();
+
+        if (tipo === 'Parcial' && detalle.length === 0) {
+            Swal.fire({ title: 'Validación', text: 'Una cancelación parcial requiere al menos un producto devuelto.', icon: 'warning', confirmButtonText: 'Aceptar', background: 'white', confirmButtonColor: '#4e73df' });
+            return;
+        }
+
+        Swal.fire({
+            title: 'Guardando...',
+            text: 'Por favor espere',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        var cancelacion = {
+            Id: parseInt($("#Id").val() || 0),
+            SucursalId: parseInt($("#SucursalId").val() || 0),
+            VentaId: parseInt($("#VentaId").val() || 0),
+            Tipo: tipo,
+            Motivo: $("#Motivo").val(),
+            UsuarioAutoriza: $("#UsuarioAutoriza").val(),
+            TotalReembolsado: parseFloat($("#TotalReembolsado").val() || 0),
+            MetodoReembolso: $("#MetodoReembolso").val(),
+            CreadoPor: $("#CreadoPor").val() || null,
+            detalleJson: JSON.stringify(detalle)
+        };
+
+        PostMVC('/Cancelacion/GuardarCancelacion', cancelacion, function (response) {
+            Swal.close();
+
+            if (response.IsSuccess) {
+                Swal.fire({
+                    title: '¡Cancelación registrada!',
+                    text: response.Message,
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    background: 'white',
+                    iconColor: '#4e73df'
+                }).then(() => {
+                    window.location.href = '/Cancelacion/Cancelacion';
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: response.Message,
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar',
+                    background: 'white',
+                    confirmButtonColor: '#4e73df'
+                });
+            }
+        });
+    }
+
+    function VerCancelacion(id) {
+        window.location.href = '/Cancelacion/Cancelacion/' + id;
+    }
+</script>

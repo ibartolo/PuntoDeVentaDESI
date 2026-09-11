@@ -1,0 +1,278 @@
+﻿@model PuntoDeVentaEntities.Catalogos.Categoria
+@using System.Collections.Generic
+@using PuntoDeVentaEntities.Catalogos
+@{
+    ViewBag.Title = "Categorías";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var categoriasPadre = ViewBag.CategoriasPadre as List<CategoriaDTO> ?? new List<CategoriaDTO>();
+    var selectPadres = new SelectList(categoriasPadre, "Id", "Nombre", Model.CategoriaPadreId);
+}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.1/jquery.validate.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.7/js/dataTables.js"></script>
+<link href="https://cdn.datatables.net/2.3.7/css/dataTables.dataTables.css" rel="stylesheet" />
+
+<div class="form-section">
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @ViewBag.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+
+    <h3 class="section-title"><i class="fas fa-sitemap me-2"></i>Catálogo de Categorías</h3>
+
+    <form id="frmCategoria" name="frmCategoria" method="post">
+        @Html.HiddenFor(x => x.Id)
+        @Html.HiddenFor(x => x.CreadoPor)
+        @Html.HiddenFor(x => x.FechaCreacion)
+        @Html.HiddenFor(x => x.ModificadoPor)
+        @Html.HiddenFor(x => x.FechaModificacion)
+        @Html.HiddenFor(x => x.Estatus)
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label>Nombre</label>
+                    @Html.TextBoxFor(x => x.Nombre, new { @class = "form-control", placeholder = "Nombre de la categoría" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label>Categoría Padre</label>
+                    @Html.DropDownListFor(x => x.CategoriaPadreId, selectPadres, "-- Sin categoría padre --", new { @class = "form-control" })
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-3">
+                    <label>Área</label>
+                    @Html.TextBoxFor(x => x.Area, new { @class = "form-control", placeholder = "Área" })
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-3">
+                    <label>Orden</label>
+                    @Html.TextBoxFor(x => x.Orden, new { @class = "form-control", type = "number", min = "0" })
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <label>Descripción</label>
+                    @Html.TextBoxFor(x => x.Descripcion, new { @class = "form-control", placeholder = "Descripción de la categoría" })
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <input type="button" value="Guardar" class="btn btn-success" onclick="GuardarActualizarCategoria()" />
+                    <a href="/Catalogs/Category" class="btn btn-warning">Cancelar</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12 table-responsive">
+                <div class="mb-3">
+                    <table id="tblCategoria"></table>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    $(function () {
+        $("#frmCategoria").validate({
+            rules: {
+                "Nombre": { required: true, maxlength: 100 }
+            },
+            messages: {
+                "Nombre": {
+                    required: "El campo 'Nombre' es requerido.",
+                    maxlength: "El nombre no puede superar los 100 caracteres."
+                }
+            },
+            errorElement: "span",
+            errorClass: "text-danger",
+            highlight: function (element) {
+                $(element).addClass("is-invalid").removeClass("is-valid");
+            },
+            unhighlight: function (element) {
+                $(element).removeClass("is-invalid").addClass("is-valid");
+            },
+            errorPlacement: function (error, element) {
+                error.insertAfter(element);
+            }
+        });
+    });
+
+    $(document).ready(function () {
+        var tabla = new DataTable('#tblCategoria', {
+            columns: [
+                { data: 'Id', title: 'ID', visible: false },
+                { data: 'Nombre', title: 'Nombre' },
+                { data: 'CategoriaPadreNombre', title: 'Categoría Padre' },
+                { data: 'Area', title: 'Área' },
+                { data: 'Descripcion', title: 'Descripción' },
+                { data: 'Orden', title: 'Orden' },
+                {
+                    data: 'Id', title: 'Acciones', render: function (data) {
+                        var html = '<div class="d-flex gap-3">';
+                        html += '<button type="button" class="btn btn-sm btn-outline-primary" onclick="EditarCategoria(' + data + ')"><i class="fas fa-edit"></i></button>';
+                        html += '<button type="button" class="btn btn-sm btn-outline-danger" onclick="EliminarCategoria(event, ' + data + ')"><i class="fas fa-trash-alt"></i></button>';
+                        html += '</div>';
+                        return html;
+                    }
+                },
+                { data: 'Estatus', title: 'Estatus', visible: false }
+            ],
+            language: {
+                url: "/Content/datatables/i18n/es-ES.json"
+            }
+        });
+        ConsultarTodasCategorias();
+    });
+
+    function GuardarActualizarCategoria() {
+        if ($("#frmCategoria").valid()) {
+            Swal.fire({
+                title: 'Guardando...',
+                text: 'Por favor espere',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            var categoria = {
+                Id: $("#Id").val() || 0,
+                Nombre: $("#Nombre").val(),
+                CategoriaPadreId: $("#CategoriaPadreId").val() || null,
+                Area: $("#Area").val(),
+                Orden: parseInt($("#Orden").val() || 0, 10),
+                Descripcion: $("#Descripcion").val(),
+                CreadoPor: $("#CreadoPor").val(),
+                FechaCreacion: new Date().toISOString(),
+                ModificadoPor: $("#ModificadoPor").val() || null,
+                FechaModificacion: null,
+                Estatus: true
+            };
+
+            PostMVC('/Catalogs/GuardarActualizarCategorias', categoria, function (response) {
+                Swal.close();
+
+                if (response.IsSuccess) {
+                    Swal.fire({
+                        title: '¡Éxito!',
+                        text: response.Message,
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        background: 'white',
+                        iconColor: '#4e73df'
+                    }).then(() => {
+                        window.location.href = '/Catalogs/Category';
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: response.Message,
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar',
+                        background: 'white',
+                        confirmButtonColor: '#4e73df'
+                    });
+                }
+            });
+        }
+    }
+
+    function ConsultarTodasCategorias() {
+        GetMVC("/Catalogs/ConsultarTodasLasCategorias", function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+
+            if (result.IsSuccess) {
+                MapingPropertiesDataTable("tblCategoria", result.Response);
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: result.Message,
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar',
+                    background: 'white',
+                    confirmButtonColor: '#4e73df'
+                });
+            }
+        });
+    }
+
+    function EditarCategoria(id) {
+        window.location.href = '/Catalogs/Category/' + id;
+    }
+
+    function EliminarCategoria(event, id) {
+        Swal.fire({
+            title: '¿Está seguro?',
+            text: 'Esta acción eliminará lógicamente el registro',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#e74a3b',
+            cancelButtonColor: '#858796'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Eliminando...',
+                    text: 'Por favor espere',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                var categoria = {
+                    Id: id,
+                    ModificadoPor: $("#ModificadoPor").val() || "system",
+                    FechaModificacion: new Date().toISOString()
+                };
+
+                PostMVC('/Catalogs/EliminarCategorias', categoria, function (response) {
+                    Swal.close();
+
+                    if (response.IsSuccess) {
+                        Swal.fire({
+                            title: '¡Eliminado!',
+                            text: response.Message,
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false,
+                            background: 'white',
+                            iconColor: '#4e73df'
+                        }).then(() => {
+                            ConsultarTodasCategorias();
+                            $("#frmCategoria")[0].reset();
+                            $("#Id").val(0);
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: response.Message,
+                            icon: 'error',
+                            confirmButtonText: 'Aceptar',
+                            background: 'white',
+                            confirmButtonColor: '#4e73df'
+                        });
+                    }
+                });
+            }
+        });
+
+        return false;
+    }
+</script>

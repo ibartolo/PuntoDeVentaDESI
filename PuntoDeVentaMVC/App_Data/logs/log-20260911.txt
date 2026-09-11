@@ -1,0 +1,5 @@
+2026-09-11 02:02:53.452 -06:00 [INF] LogIn iniciado para usuario dev-admin
+2026-09-11 02:02:55.592 -06:00 [INF] AutenticarUsuario (MVC DAL) para dev-admin: IsSuccess=true, Message=Autenticación correcta
+2026-09-11 02:02:55.597 -06:00 [INF] LogIn paso 1 (autenticar) para dev-admin: IsSuccess=true, Message=Autenticación correcta
+2026-09-11 02:02:57.067 -06:00 [INF] TokenAsync OK: Endpoint=token, StatusCode=200
+2026-09-11 02:02:57.108 -06:00 [INF] LogIn exitoso para dev-admin

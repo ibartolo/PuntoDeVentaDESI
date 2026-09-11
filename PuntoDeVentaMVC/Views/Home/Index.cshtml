@@ -1,0 +1,78 @@
+﻿@{
+    ViewBag.Title = "Inicio";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2 class="page-title">Dashboard Punto de Venta</h2>
+
+<!-- ========================================= -->
+<!-- TARJETAS DE ACCESO RÁPIDO -->
+<!-- ========================================= -->
+<div class="row">
+    <div class="col-md-6 col-lg-3">
+        <a href="/Marca/Mark" class="text-decoration-none">
+            <div class="stat-card primary">
+                <div class="stat-number"><i class="fas fa-cash-register"></i></div>
+                <div class="stat-title">Ventas</div>
+                <small class="text-muted">Registrar una nueva venta</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <a href="/Marca/Mark" class="text-decoration-none">
+            <div class="stat-card success">
+                <div class="stat-number"><i class="fas fa-boxes"></i></div>
+                <div class="stat-title">Inventario</div>
+                <small class="text-muted">Stock y movimientos</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <a href="/Marca/Mark" class="text-decoration-none">
+            <div class="stat-card warning">
+                <div class="stat-number"><i class="fas fa-coins"></i></div>
+                <div class="stat-title">Caja</div>
+                <small class="text-muted">Cortes y movimientos</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <a href="/Marca/Mark" class="text-decoration-none">
+            <div class="stat-card info">
+                <div class="stat-number"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-title">Reportes</div>
+                <small class="text-muted">Ventas por periodo</small>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- ========================================= -->
+<!-- CATÁLOGOS -->
+<!-- ========================================= -->
+<div class="form-section">
+    <h3 class="section-title"><i class="fas fa-th-list me-2"></i>Catálogos</h3>
+
+    <div class="row">
+        <div class="col-md-6 col-lg-3">
+            <a href="/Marca/Mark" class="text-decoration-none">
+                <div class="stat-card primary">
+                    <div class="stat-number"><i class="fas fa-trademark"></i></div>
+                    <div class="stat-title">Marcas</div>
+                    <small class="text-muted">Catálogo de marcas</small>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================= -->
+<!-- BIENVENIDA -->
+<!-- ========================================= -->
+<div class="form-section">
+    <h3 class="section-title"><i class="fas fa-info-circle me-2"></i>Bienvenido</h3>
+    <p class="text-muted">
+        Sistema de Punto de Venta. Utiliza el menú lateral para navegar entre los módulos
+        disponibles según los permisos de tu rol.
+    </p>
+</div>

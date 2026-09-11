@@ -1,0 +1,49 @@
+﻿@model PuntoDeVentaEntities.Autenticacion.Usuario
+@{
+    ViewBag.Title = "Mi Perfil";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="form-section">
+    <h3 class="section-title"><i class="fas fa-user-circle me-2"></i>Mi Perfil</h3>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="mb-3 text-center">
+                @if (!string.IsNullOrEmpty(Model.ImagenPerfil))
+                {
+                    <img src="@Model.ImagenPerfil" alt="Foto de perfil" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover;" />
+                }
+                else
+                {
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center bg-primary text-white"
+                         style="width: 120px; height: 120px; font-size: 3rem; font-weight: bold;">
+                        @(string.IsNullOrWhiteSpace(Model.NombreUsuario) ? "??" : Model.NombreUsuario.Substring(0, 1).ToUpper())
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="mb-3">
+                <label>Nombre de usuario:</label>
+                <input type="text" class="form-control" value="@Model.NombreUsuario" readonly />
+            </div>
+            <div class="mb-3">
+                <label>Correo electrónico:</label>
+                <input type="text" class="form-control" value="@Model.Correo" readonly />
+            </div>
+            <div class="mb-3">
+                <label>Teléfono:</label>
+                <input type="text" class="form-control" value="@Model.Telefono" readonly />
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="mb-3">
+                <a href="/Home/Index" class="btn btn-warning">Regresar</a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,104 @@
+﻿@using System.Linq
+@model System.Collections.Generic.List<PuntoDeVentaEntities.Seguridad.Pagina>
+@{
+    var paginas = Model ?? new System.Collections.Generic.List<PuntoDeVentaEntities.Seguridad.Pagina>();
+    var menus = paginas.Where(p => p.Tipo == "Menu").OrderBy(p => p.OrdenB).ToList();
+    var submenus = paginas.Where(p => p.Tipo == "SubMenu").ToList();
+}
+
+<div class="sidebar-header">
+    <i class="fas fa-cash-register" style="font-size: 3rem; color: white;"></i>
+    <h3>Punto de Venta</h3>
+    <p>Sistema Punto de Venta</p>
+</div>
+
+<ul class="components">
+    @if (menus.Any())
+    {
+        foreach (var menu in menus)
+        {
+            var hijos = submenus.Where(s => s.PermisosPadreId == menu.Id).OrderBy(s => s.OrdenB).ToList();
+            var logoMenu = string.IsNullOrWhiteSpace(menu.Logo) ? "fa-circle" : menu.Logo;
+
+            if (hijos.Any())
+            {
+                <li>
+                    <a href="#" class="has-arrow">
+                        <i class="fas @logoMenu"></i>
+                        <span class="menu-text">@menu.NombreVisible</span>
+                    </a>
+                    <ul>
+                        @foreach (var hijo in hijos)
+                        {
+                            var urlHijo = string.IsNullOrWhiteSpace(hijo.Direccion) ? "#" : hijo.Direccion;
+                            var logoHijo = string.IsNullOrWhiteSpace(hijo.Logo) ? "fa-circle" : hijo.Logo;
+                            <li>
+                                <a href="@urlHijo">
+                                    <i class="fas @logoHijo"></i>
+                                    <span class="menu-text">@hijo.NombreVisible</span>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </li>
+            }
+            else
+            {
+                var urlMenu = string.IsNullOrWhiteSpace(menu.Direccion) ? "#" : menu.Direccion;
+                <li>
+                    <a href="@urlMenu">
+                        <i class="fas @logoMenu"></i>
+                        <span class="menu-text">@menu.NombreVisible</span>
+                    </a>
+                </li>
+            }
+        }
+    }
+    else
+    {
+        <li>
+            <a href="/Home/Index">
+                <i class="fas fa-home"></i>
+                <span class="menu-text">Inicio</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" class="has-arrow">
+                <i class="fas fa-th-list"></i>
+                <span class="menu-text">Catálogos</span>
+            </a>
+            <ul>
+                <li>
+                    <a href="/Marca/Mark">
+                        <i class="fas fa-trademark"></i>
+                        <span class="menu-text">Marcas</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <a href="#">
+                <i class="fas fa-cash-register"></i>
+                <span class="menu-text">Ventas</span>
+            </a>
+        </li>
+        <li>
+            <a href="#">
+                <i class="fas fa-boxes"></i>
+                <span class="menu-text">Inventario</span>
+            </a>
+        </li>
+        <li>
+            <a href="#">
+                <i class="fas fa-coins"></i>
+                <span class="menu-text">Caja</span>
+            </a>
+        </li>
+        <li>
+            <a href="#">
+                <i class="fas fa-chart-line"></i>
+                <span class="menu-text">Reportes</span>
+            </a>
+        </li>
+    }
+</ul>

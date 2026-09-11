@@ -1,0 +1,498 @@
+﻿@model PuntoDeVentaEntities.Ventas.VentaDTO
+@{
+    ViewBag.Title = "Ventas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.1/jquery.validate.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.7/js/dataTables.js"></script>
+<link href="https://cdn.datatables.net/2.3.7/css/dataTables.dataTables.css" rel="stylesheet" />
+
+<div class="form-section">
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @ViewBag.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+
+    <h3 class="section-title"><i class="fas fa-cash-register me-2"></i>Punto de Venta</h3>
+
+    <form id="frmVenta" name="frmVenta" method="post">
+        @Html.HiddenFor(x => x.Id)
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Sucursal</label>
+                    <select id="SucursalId" name="SucursalId" class="form-control"></select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Cliente</label>
+                    <select id="ClienteId" name="ClienteId" class="form-control"></select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Método de pago</label>
+                    <select id="MetodoPago" name="MetodoPago" class="form-control">
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                        <option value="Transferencia">Transferencia</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Código de barras / QR</label>
+                    <div class="input-group">
+                        <input type="text" id="CodigoBarras" class="form-control" placeholder="Escanee o escriba el código" autocomplete="off" />
+                        <button type="button" class="btn btn-outline-secondary" title="Escáner por cámara (pendiente de integración de hardware)" onclick="AbrirEscanerCamara()"><i class="fas fa-camera"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-7">
+                <div class="mb-3">
+                    <label>Catálogo por categoría</label>
+                    <select id="FiltroCategoria" class="form-control"></select>
+                </div>
+                <div class="table-responsive">
+                    <table id="tblProductos"></table>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="mb-3">
+                    <label>Carrito</label>
+                    <div class="table-responsive">
+                        <table id="tblCarrito" class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>P. Unitario</th>
+                                    <th>Importe</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="carritoBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="text-end">
+                        <div>Subtotal: <strong id="lblSubtotal">$0.00</strong></div>
+                        <div>Impuesto: <strong id="lblImpuesto">$0.00</strong></div>
+                        <div class="fs-5">Total: <strong id="lblTotal">$0.00</strong></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <input type="button" value="Cobrar y guardar" class="btn btn-success" onclick="GuardarVenta()" />
+                    <input type="button" value="Abrir cajón" class="btn btn-outline-dark" onclick="AbrirCajon()" />
+                    <input type="button" value="Limpiar" class="btn btn-warning" onclick="LimpiarVenta()" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12 table-responsive">
+                <div class="mb-3">
+                    <label>Ventas recientes</label>
+                    <table id="tblVentas"></table>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    var TASA_IMPUESTO = 0.16;
+    var productos = [];
+    var carrito = [];
+
+    $(document).ready(function () {
+        $("#frmVenta").validate({
+            rules: {
+                "MetodoPago": {
+                    required: true
+                }
+            },
+            messages: {
+                "MetodoPago": {
+                    required: "El método de pago es requerido."
+                }
+            },
+            errorElement: "span",
+            errorClass: "text-danger"
+        });
+
+        InicializarTablas();
+        ConsultarSucursales();
+        ConsultarClientes();
+        ConsultarCategorias();
+        ConsultarProductos();
+        ConsultarVentas();
+    });
+
+    function InicializarTablas() {
+        new DataTable('#tblProductos', {
+            pageLength: 5,
+            columns: [
+                { data: 'Codigo', title: 'Código' },
+                { data: 'Nombre', title: 'Producto' },
+                { data: 'CategoriaNombre', title: 'Categoría' },
+                {
+                    data: 'PrecioVenta', title: 'Precio', render: function (data) {
+                        return formatMoney(data);
+                    }
+                },
+                { data: 'StockDisponible', title: 'Existencia' },
+                {
+                    data: 'Id', title: 'Acciones', render: function (data) {
+                        return '<button type="button" class="btn btn-sm btn-outline-primary" onclick="AgregarProducto(' + data + ')"><i class="fas fa-plus"></i></button>';
+                    }
+                }
+            ],
+            language: {
+                url: "/Content/datatables/i18n/es-ES.json"
+            }
+        });
+
+        new DataTable('#tblVentas', {
+            columns: [
+                { data: 'Id', title: 'ID', visible: false },
+                { data: 'Folio', title: 'Folio' },
+                {
+                    data: 'FechaVenta', title: 'Fecha', render: function (data) {
+                        return data ? formatDate(data) : '';
+                    }
+                },
+                { data: 'ClienteNombre', title: 'Cliente' },
+                { data: 'MetodoPago', title: 'Método' },
+                {
+                    data: 'Total', title: 'Total', render: function (data) {
+                        return formatMoney(data);
+                    }
+                },
+                {
+                    data: 'Id', title: 'Acciones', render: function (data) {
+                        return '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="VerVenta(' + data + ')"><i class="fas fa-eye"></i></button>';
+                    }
+                }
+            ],
+            language: {
+                url: "/Content/datatables/i18n/es-ES.json"
+            }
+        });
+
+        $("#FiltroCategoria").on("change", function () {
+            var tabla = $('#tblProductos').DataTable();
+            tabla.column(2).search(this.value).draw();
+        });
+
+        $("#CodigoBarras").on("keypress", function (e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                BuscarPorCodigo($(this).val());
+                $(this).val("");
+            }
+        });
+    }
+
+    function ConsultarSucursales() {
+        GetMVC("/Catalogs/ConsultarTodasLasSucursales", function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+            if (result.IsSuccess) {
+                var opciones = '<option value="0">-- Seleccione --</option>';
+                $.each(result.Response, function (i, s) {
+                    opciones += '<option value="' + s.Id + '">' + s.Nombre + '</option>';
+                });
+                $("#SucursalId").html(opciones);
+            }
+        });
+    }
+
+    function ConsultarClientes() {
+        GetMVC("/Catalogs/ConsultarTodosLosClientes", function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+            if (result.IsSuccess) {
+                var opciones = '<option value="">Público General</option>';
+                $.each(result.Response, function (i, c) {
+                    opciones += '<option value="' + c.Id + '">' + c.Nombre + '</option>';
+                });
+                $("#ClienteId").html(opciones);
+            }
+        });
+    }
+
+    function ConsultarCategorias() {
+        GetMVC("/Catalogs/ConsultarTodasLasCategorias", function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+            if (result.IsSuccess) {
+                var opciones = '<option value="">Todas las categorías</option>';
+                $.each(result.Response, function (i, c) {
+                    opciones += '<option value="' + c.Nombre + '">' + c.Nombre + '</option>';
+                });
+                $("#FiltroCategoria").html(opciones);
+            }
+        });
+    }
+
+    function ConsultarProductos() {
+        GetMVC("/Catalogs/ConsultarTodosLosProductos", function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+            if (result.IsSuccess) {
+                productos = result.Response || [];
+                MapingPropertiesDataTable("tblProductos", productos);
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: result.Message,
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar',
+                    background: 'white',
+                    confirmButtonColor: '#4e73df'
+                });
+            }
+        });
+    }
+
+    function ConsultarVentas() {
+        GetMVC("/Venta/ConsultarTodasLasVentas", function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+            if (result.IsSuccess) {
+                MapingPropertiesDataTable("tblVentas", result.Response);
+            }
+        });
+    }
+
+    function BuscarPorCodigo(codigo) {
+        if (!codigo) {
+            return;
+        }
+
+        var encontrado = null;
+        $.each(productos, function (i, p) {
+            if (p.Codigo && p.Codigo.toString() === codigo.toString()) {
+                encontrado = p;
+                return false;
+            }
+        });
+
+        if (encontrado) {
+            AgregarProducto(encontrado.Id);
+        } else {
+            Swal.fire({
+                title: 'No encontrado',
+                text: 'No existe un producto con el código ' + codigo + '.',
+                icon: 'warning',
+                confirmButtonText: 'Aceptar',
+                background: 'white',
+                confirmButtonColor: '#4e73df'
+            });
+        }
+    }
+
+    function AgregarProducto(productoId) {
+        var producto = null;
+        $.each(productos, function (i, p) {
+            if (p.Id === productoId) {
+                producto = p;
+                return false;
+            }
+        });
+
+        if (!producto) {
+            return;
+        }
+
+        var existente = null;
+        $.each(carrito, function (i, item) {
+            if (item.ProductoId === productoId) {
+                existente = item;
+                return false;
+            }
+        });
+
+        if (existente) {
+            existente.Cantidad = existente.Cantidad + 1;
+            existente.Importe = existente.Cantidad * existente.PrecioUnitario;
+        } else {
+            carrito.push({
+                ProductoId: producto.Id,
+                ProductoNombre: producto.Nombre,
+                Cantidad: 1,
+                PrecioUnitario: producto.PrecioVenta || 0,
+                Importe: producto.PrecioVenta || 0
+            });
+        }
+
+        RenderCarrito();
+    }
+
+    function CambiarCantidad(index, cantidad) {
+        var item = carrito[index];
+        if (!item) {
+            return;
+        }
+
+        item.Cantidad = cantidad > 0 ? cantidad : 0;
+        item.Importe = item.Cantidad * item.PrecioUnitario;
+        RenderCarrito();
+    }
+
+    function QuitarProducto(index) {
+        carrito.splice(index, 1);
+        RenderCarrito();
+    }
+
+    function RenderCarrito() {
+        var html = "";
+        $.each(carrito, function (i, item) {
+            html += '<tr>';
+            html += '<td>' + item.ProductoNombre + '</td>';
+            html += '<td><input type="number" min="1" class="form-control form-control-sm" style="width:80px" value="' + item.Cantidad + '" onchange="CambiarCantidad(' + i + ', parseFloat(this.value))" /></td>';
+            html += '<td>' + formatMoney(item.PrecioUnitario) + '</td>';
+            html += '<td>' + formatMoney(item.Importe) + '</td>';
+            html += '<td><button type="button" class="btn btn-sm btn-outline-danger" onclick="QuitarProducto(' + i + ')"><i class="fas fa-times"></i></button></td>';
+            html += '</tr>';
+        });
+
+        $("#carritoBody").html(html);
+        RecalcularTotales();
+    }
+
+    function RecalcularTotales() {
+        var subtotal = 0;
+        $.each(carrito, function (i, item) {
+            subtotal += item.Importe;
+        });
+
+        var impuesto = subtotal * TASA_IMPUESTO;
+        var total = subtotal + impuesto;
+
+        $("#lblSubtotal").text(formatMoney(subtotal));
+        $("#lblImpuesto").text(formatMoney(impuesto));
+        $("#lblTotal").text(formatMoney(total));
+    }
+
+    function GuardarVenta() {
+        var sucursalId = parseInt($("#SucursalId").val() || "0", 10);
+        if (sucursalId <= 0) {
+            Swal.fire({ title: 'Atención', text: 'Seleccione la sucursal.', icon: 'warning', confirmButtonText: 'Aceptar', background: 'white', confirmButtonColor: '#4e73df' });
+            return;
+        }
+
+        if (carrito.length === 0) {
+            Swal.fire({ title: 'Atención', text: 'El carrito está vacío.', icon: 'warning', confirmButtonText: 'Aceptar', background: 'white', confirmButtonColor: '#4e73df' });
+            return;
+        }
+
+        if (!$("#frmVenta").valid()) {
+            return;
+        }
+
+        Swal.fire({
+            title: 'Guardando...',
+            text: 'Por favor espere',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        var subtotal = 0;
+        $.each(carrito, function (i, item) {
+            subtotal += item.Importe;
+        });
+        var impuesto = subtotal * TASA_IMPUESTO;
+        var total = subtotal + impuesto;
+
+        var clienteId = parseInt($("#ClienteId").val() || "0", 10);
+
+        var venta = {
+            Id: parseInt($("#Id").val() || "0", 10),
+            SucursalId: sucursalId,
+            ClienteId: clienteId > 0 ? clienteId : null,
+            MetodoPago: $("#MetodoPago").val(),
+            Subtotal: subtotal,
+            Impuesto: impuesto,
+            Total: total,
+            CreadoPor: $("#CreadoPor").val() || null,
+            detalleJson: JSON.stringify(carrito)
+        };
+
+        PostMVC('/Venta/GuardarVenta', venta, function (response) {
+            Swal.close();
+
+            if (response.IsSuccess) {
+                Swal.fire({
+                    title: '¡Venta registrada!',
+                    text: response.Message,
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    background: 'white',
+                    iconColor: '#4e73df'
+                }).then(() => {
+                    LimpiarVenta();
+                    ConsultarProductos();
+                    ConsultarVentas();
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: response.Message,
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar',
+                    background: 'white',
+                    confirmButtonColor: '#4e73df'
+                });
+            }
+        });
+    }
+
+    function LimpiarVenta() {
+        carrito = [];
+        $("#frmVenta")[0].reset();
+        $("#Id").val(0);
+        RenderCarrito();
+    }
+
+    function VerVenta(id) {
+        window.location.href = '/Venta/Index/' + id;
+    }
+
+    function AbrirCajon() {
+        // La apertura del cajón depende del hardware (impresora/OPOS o servicio local).
+        // Se deja el punto de extensión para integrar el comando ESC/POS cuando exista el dispositivo.
+        Swal.fire({
+            title: 'Abrir cajón',
+            text: 'Solicitud enviada al dispositivo configurado.',
+            icon: 'info',
+            confirmButtonText: 'Aceptar',
+            background: 'white',
+            confirmButtonColor: '#4e73df'
+        });
+    }
+
+    function AbrirEscanerCamara() {
+        // El escáner por cámara requiere una librería (p. ej. QuaggaJS/ZXing) y permisos de cámara.
+        // Punto de extensión: al detectar un código, invocar BuscarPorCodigo(codigo).
+        Swal.fire({
+            title: 'Escáner por cámara',
+            text: 'Función pendiente de integración de hardware.',
+            icon: 'info',
+            confirmButtonText: 'Aceptar',
+            background: 'white',
+            confirmButtonColor: '#4e73df'
+        });
+    }
+</script>

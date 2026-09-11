@@ -1,0 +1,156 @@
+﻿@model PuntoDeVentaEntities.Seguridad.Rol
+@{
+    ViewBag.Title = "Roles";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var permisos = ViewBag.Permisos as PuntoDeVentaEntities.Seguridad.PermisosViewModel;
+}
+<script src="https://cdn.datatables.net/2.3.7/js/dataTables.js"></script>
+<link href="https://cdn.datatables.net/2.3.7/css/dataTables.dataTables.css" rel="stylesheet" />
+
+<div class="form-section">
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @ViewBag.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+
+    <h3 class="section-title"><i class="fas fa-user-tag me-2"></i>Catálogo de Roles</h3>
+
+    <form id="frmRol" name="frmRol" method="post">
+        @Html.HiddenFor(x => x.Id)
+        @Html.HiddenFor(x => x.EmpresaId)
+        @Html.HiddenFor(x => x.CreadoPor)
+        @Html.HiddenFor(x => x.FechaCreacion)
+        @Html.HiddenFor(x => x.ModificadoPor)
+        @Html.HiddenFor(x => x.FechaModificacion)
+        @Html.HiddenFor(x => x.Estatus)
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label>Nombre</label>
+                    @Html.TextBoxFor(x => x.Nombre, new { @class = "form-control", placeholder = "Nombre del rol" })
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label>Descripción</label>
+                    @Html.TextBoxFor(x => x.Descripcion, new { @class = "form-control", placeholder = "Descripción del rol" })
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-3 form-check mt-4">
+                    @Html.CheckBoxFor(x => x.PuedeAutorizar, new { @class = "form-check-input" })
+                    <label class="form-check-label" for="PuedeAutorizar">Puede autorizar</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <input type="button" value="Guardar" class="btn btn-success" onclick="GuardarActualizarRol()" />
+                    <a href="/Security/Role" class="btn btn-warning">Cancelar</a>
+                    @if (permisos != null && permisos.PuedeEditar)
+                    {
+                        <a href="/Security/Permisos" class="btn btn-info">Administrar Permisos</a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12 table-responsive">
+                <div class="mb-3">
+                    <table id="tblRol"></table>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        var tabla = new DataTable('#tblRol', {
+            columns: [
+                { data: 'Id', title: 'ID', visible: false },
+                { data: 'Nombre', title: 'Nombre' },
+                { data: 'Descripcion', title: 'Descripción' },
+                { data: 'PuedeAutorizar', title: 'Autoriza', render: function (d) { return d ? 'Sí' : 'No'; } },
+                {
+                    data: 'Id', title: 'Acciones', render: function (data) {
+                        var html = '<div class="d-flex gap-3">';
+                        html += '<button type="button" class="btn btn-sm btn-outline-primary" onclick="EditarRol(' + data + ')"><i class="fas fa-edit"></i></button>';
+                        html += '<button type="button" class="btn btn-sm btn-outline-danger" onclick="EliminarRol(' + data + ')"><i class="fas fa-trash-alt"></i></button>';
+                        html += '</div>';
+                        return html;
+                    }
+                }
+            ],
+            language: { url: "/Content/datatables/i18n/es-ES.json" }
+        });
+        ConsultarTodosLosRoles();
+    });
+
+    function ConsultarTodosLosRoles() {
+        GetMVC("/Security/ConsultarTodosLosRoles", function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+            if (result.IsSuccess) {
+                MapingPropertiesDataTable("tblRol", result.Response);
+            }
+        });
+    }
+
+    function GuardarActualizarRol() {
+        var rol = {
+            Id: $("#Id").val() || 0,
+            EmpresaId: $("#EmpresaId").val() || 0,
+            Nombre: $("#Nombre").val(),
+            Descripcion: $("#Descripcion").val(),
+            PuedeAutorizar: $("#PuedeAutorizar").is(":checked"),
+            Estatus: true
+        };
+
+        PostMVC('/Security/GuardarOActualizarRol', rol, function (response) {
+            var result = typeof response == 'string' ? JSON.parse(response) : response;
+            if (result.IsSuccess) {
+                Swal.fire({ title: '¡Éxito!', text: result.Message, icon: 'success', timer: 1500, showConfirmButton: false })
+                    .then(function () { window.location.href = '/Security/Role'; });
+            } else {
+                Swal.fire({ title: 'Error', text: result.Message, icon: 'error', confirmButtonText: 'Aceptar' });
+            }
+        });
+    }
+
+    function EditarRol(id) {
+        window.location.href = '/Security/Role/' + id;
+    }
+
+    function EliminarRol(id) {
+        Swal.fire({
+            title: '¿Está seguro?',
+            text: 'Se desactivará el rol seleccionado.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#e74a3b'
+        }).then(function (result) {
+            if (result.isConfirmed) {
+                var rol = { Id: id, ModificadoPor: 'system', FechaModificacion: new Date().toISOString() };
+                PostMVC('/Security/EliminarRol', rol, function (response) {
+                    var res = typeof response == 'string' ? JSON.parse(response) : response;
+                    if (res.IsSuccess) {
+                        ConsultarTodosLosRoles();
+                        $("#frmRol")[0].reset();
+                        $("#Id").val(0);
+                    } else {
+                        Swal.fire({ title: 'Error', text: res.Message, icon: 'error', confirmButtonText: 'Aceptar' });
+                    }
+                });
+            }
+        });
+    }
+</script>

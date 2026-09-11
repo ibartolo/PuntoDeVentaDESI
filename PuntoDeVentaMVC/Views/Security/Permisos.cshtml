@@ -1,0 +1,120 @@
+﻿@{
+    ViewBag.Title = "Permisos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var roles = ViewBag.Roles as System.Collections.Generic.List<PuntoDeVentaEntities.Seguridad.Rol> ?? new System.Collections.Generic.List<PuntoDeVentaEntities.Seguridad.Rol>();
+    var permisos = ViewBag.Permisos as PuntoDeVentaEntities.Seguridad.PermisosViewModel;
+}
+<script src="https://cdn.datatables.net/2.3.7/js/dataTables.js"></script>
+<link href="https://cdn.datatables.net/2.3.7/css/dataTables.dataTables.css" rel="stylesheet" />
+
+<div class="form-section">
+    <h3 class="section-title"><i class="fas fa-key me-2"></i>Permisos por Rol</h3>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label>Rol</label>
+                <select id="selRol" class="form-select">
+                    <option value="0">-- Seleccione un rol --</option>
+                    @foreach (var rol in roles)
+                    {
+                        <option value="@rol.Id">@rol.Nombre</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mb-3 mt-4">
+                <input type="button" value="Cargar Permisos" class="btn btn-primary" onclick="CargarPermisos()" />
+                @if (permisos != null && permisos.PuedeEditar)
+                {
+                    <input type="button" value="Guardar" class="btn btn-success" onclick="GuardarPermisos()" />
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 table-responsive">
+            <table id="tblPermisos" class="table table-bordered"></table>
+        </div>
+    </div>
+</div>
+
+<script>
+    var permisosActuales = [];
+
+    function CargarPermisos() {
+        var rolId = parseInt($("#selRol").val());
+        if (!rolId || rolId <= 0) {
+            Swal.fire({ title: 'Atención', text: 'Seleccione un rol.', icon: 'warning', confirmButtonText: 'Aceptar' });
+            return;
+        }
+
+        GetMVC('/Security/ObtenerPermisosPorRol?rolId=' + rolId, function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+            if (result.IsSuccess) {
+                permisosActuales = result.Response || [];
+                RenderPermisos(permisosActuales);
+            } else {
+                Swal.fire({ title: 'Error', text: result.Message, icon: 'error', confirmButtonText: 'Aceptar' });
+            }
+        });
+    }
+
+    function RenderPermisos(lista) {
+        var html = '<thead><tr><th>Página</th><th class="text-center">Leer</th><th class="text-center">Crear</th><th class="text-center">Editar</th><th class="text-center">Eliminar</th><th class="text-center">Exportar</th></tr></thead><tbody>';
+
+        lista.forEach(function (p) {
+            html += '<tr data-pagina="' + p.PaginaId + '">';
+            html += '<td>' + (p.PaginaNombre || '') + '</td>';
+            html += '<td class="text-center"><input type="checkbox" class="chk" data-accion="PuedeLeer" ' + (p.PuedeLeer ? 'checked' : '') + ' /></td>';
+            html += '<td class="text-center"><input type="checkbox" class="chk" data-accion="PuedeCrear" ' + (p.PuedeCrear ? 'checked' : '') + ' /></td>';
+            html += '<td class="text-center"><input type="checkbox" class="chk" data-accion="PuedeEditar" ' + (p.PuedeEditar ? 'checked' : '') + ' /></td>';
+            html += '<td class="text-center"><input type="checkbox" class="chk" data-accion="PuedeEliminar" ' + (p.PuedeEliminar ? 'checked' : '') + ' /></td>';
+            html += '<td class="text-center"><input type="checkbox" class="chk" data-accion="PuedeExportar" ' + (p.PuedeExportar ? 'checked' : '') + ' /></td>';
+            html += '</tr>';
+        });
+
+        html += '</tbody>';
+        $('#tblPermisos').html(html);
+    }
+
+    function GuardarPermisos() {
+        var rolId = parseInt($("#selRol").val());
+        if (!rolId || rolId <= 0) {
+            Swal.fire({ title: 'Atención', text: 'Seleccione un rol.', icon: 'warning', confirmButtonText: 'Aceptar' });
+            return;
+        }
+
+        var permisos = [];
+        $('#tblPermisos tbody tr').each(function () {
+            var $tr = $(this);
+            var permiso = { PaginaId: parseInt($tr.data('pagina')) };
+            $tr.find('.chk').each(function () {
+                permiso[$(this).data('accion')] = $(this).is(':checked');
+            });
+            permisos.push(permiso);
+        });
+
+        var payload = { RolId: rolId, Permisos: permisos };
+
+        $.ajax({
+            url: '/Security/GuardarPermisosRolMasivo',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success: function (response) {
+                var res = typeof response == 'string' ? JSON.parse(response) : response;
+                if (res.IsSuccess) {
+                    Swal.fire({ title: '¡Éxito!', text: res.Message, icon: 'success', timer: 1500, showConfirmButton: false });
+                } else {
+                    Swal.fire({ title: 'Error', text: res.Message, icon: 'error', confirmButtonText: 'Aceptar' });
+                }
+            },
+            error: function () {
+                Swal.fire({ title: 'Error', text: 'No se pudo guardar los permisos.', icon: 'error', confirmButtonText: 'Aceptar' });
+            }
+        });
+    }
+</script>

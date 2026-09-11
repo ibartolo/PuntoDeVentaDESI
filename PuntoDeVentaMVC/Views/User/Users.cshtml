@@ -1,0 +1,168 @@
+﻿@model PuntoDeVentaEntities.Autenticacion.Usuario
+@{
+    ViewBag.Title = "Usuarios";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var roles = ViewBag.Roles as System.Collections.Generic.List<PuntoDeVentaEntities.Seguridad.Rol> ?? new System.Collections.Generic.List<PuntoDeVentaEntities.Seguridad.Rol>();
+}
+<script src="https://cdn.datatables.net/2.3.7/js/dataTables.js"></script>
+<link href="https://cdn.datatables.net/2.3.7/css/dataTables.dataTables.css" rel="stylesheet" />
+
+<div class="form-section">
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @ViewBag.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+
+    <h3 class="section-title"><i class="fas fa-users me-2"></i>Catálogo de Usuarios</h3>
+
+    <form id="frmUsuario" name="frmUsuario" method="post">
+        @Html.HiddenFor(x => x.Id)
+        @Html.HiddenFor(x => x.EmpresaId)
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Usuario</label>
+                    @Html.TextBoxFor(x => x.NombreUsuario, new { @class = "form-control", placeholder = "Nombre de usuario" })
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Correo</label>
+                    @Html.TextBoxFor(x => x.Correo, new { @class = "form-control", placeholder = "correo@dominio.com" })
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Teléfono</label>
+                    @Html.TextBoxFor(x => x.Telefono, new { @class = "form-control", placeholder = "Teléfono" })
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Contraseña</label>
+                    @Html.PasswordFor(x => x.Contrasena, new { @class = "form-control", placeholder = "Nueva contraseña" })
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label>Rol</label>
+                    <select id="RolId" name="RolId" class="form-select">
+                        <option value="">-- Sin rol --</option>
+                        @foreach (var rol in roles)
+                        {
+                            <option value="@rol.Id">@rol.Nombre</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="mb-3 mt-4">
+                    <input type="button" value="Guardar" class="btn btn-success" onclick="GuardarActualizarUsuario()" />
+                    <a href="/User/Users" class="btn btn-warning">Cancelar</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12 table-responsive">
+                <div class="mb-3">
+                    <table id="tblUsuario"></table>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        var tabla = new DataTable('#tblUsuario', {
+            columns: [
+                { data: 'Id', title: 'ID', visible: false },
+                { data: 'NombreUsuario', title: 'Usuario' },
+                { data: 'Correo', title: 'Correo' },
+                { data: 'Telefono', title: 'Teléfono' },
+                {
+                    data: 'Id', title: 'Acciones', render: function (data) {
+                        var html = '<div class="d-flex gap-3">';
+                        html += '<button type="button" class="btn btn-sm btn-outline-primary" onclick="EditarUsuario(' + data + ')"><i class="fas fa-edit"></i></button>';
+                        html += '<button type="button" class="btn btn-sm btn-outline-danger" onclick="EliminarUsuario(' + data + ')"><i class="fas fa-trash-alt"></i></button>';
+                        html += '</div>';
+                        return html;
+                    }
+                }
+            ],
+            language: { url: "/Content/datatables/i18n/es-ES.json" }
+        });
+        ConsultarTodosLosUsuarios();
+    });
+
+    function ConsultarTodosLosUsuarios() {
+        GetMVC("/User/ConsultarTodosLosUsuarios", function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+            if (result.IsSuccess) {
+                MapingPropertiesDataTable("tblUsuario", result.Response);
+            }
+        });
+    }
+
+    function GuardarActualizarUsuario() {
+        var usuario = {
+            Id: $("#Id").val() || 0,
+            EmpresaId: $("#EmpresaId").val() || 0,
+            NombreUsuario: $("#NombreUsuario").val(),
+            Correo: $("#Correo").val(),
+            Telefono: $("#Telefono").val(),
+            Contrasena: $("#Contrasena").val(),
+            Estatus: true
+        };
+
+        var datos = $.extend({}, usuario, { RolId: $("#RolId").val() });
+
+        PostMVC('/User/GuardarOActualizarUsuarioAdmin', datos, function (response) {
+            var result = typeof response == 'string' ? JSON.parse(response) : response;
+            if (result.IsSuccess) {
+                Swal.fire({ title: '¡Éxito!', text: result.Message, icon: 'success', timer: 1500, showConfirmButton: false })
+                    .then(function () { window.location.href = '/User/Users'; });
+            } else {
+                Swal.fire({ title: 'Error', text: result.Message, icon: 'error', confirmButtonText: 'Aceptar' });
+            }
+        });
+    }
+
+    function EditarUsuario(id) {
+        window.location.href = '/User/Users/' + id;
+    }
+
+    function EliminarUsuario(id) {
+        Swal.fire({
+            title: '¿Está seguro?',
+            text: 'Se desactivará el usuario seleccionado.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#e74a3b'
+        }).then(function (result) {
+            if (result.isConfirmed) {
+                var usuario = { Id: id, ModificadoPor: 'system', FechaModificacion: new Date().toISOString() };
+                PostMVC('/User/EliminarUsuarioAdmin', usuario, function (response) {
+                    var res = typeof response == 'string' ? JSON.parse(response) : response;
+                    if (res.IsSuccess) {
+                        ConsultarTodosLosUsuarios();
+                        $("#frmUsuario")[0].reset();
+                        $("#Id").val(0);
+                    } else {
+                        Swal.fire({ title: 'Error', text: res.Message, icon: 'error', confirmButtonText: 'Aceptar' });
+                    }
+                });
+            }
+        });
+    }
+</script>

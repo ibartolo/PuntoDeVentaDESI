@@ -1,0 +1,253 @@
+﻿@model PuntoDeVentaEntities.Caja.CorteDTO
+@{
+    ViewBag.Title = "Cortes de Caja";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.1/jquery.validate.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.7/js/dataTables.js"></script>
+<link href="https://cdn.datatables.net/2.3.7/css/dataTables.dataTables.css" rel="stylesheet" />
+
+<div class="form-section">
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @ViewBag.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+
+    <h3 class="section-title"><i class="fas fa-cash-register me-2"></i>Cortes de Caja</h3>
+
+    <form id="frmCorte" name="frmCorte" method="post">
+        @Html.HiddenFor(x => x.Id)
+        @Html.HiddenFor(x => x.UsuarioId)
+        @Html.HiddenFor(x => x.CreadoPor)
+        @Html.HiddenFor(x => x.FechaCreacion)
+        @Html.HiddenFor(x => x.ModificadoPor)
+        @Html.HiddenFor(x => x.FechaModificacion)
+        @Html.HiddenFor(x => x.Estatus)
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Sucursal (Id)</label>
+                    @Html.TextBoxFor(x => x.SucursalId, new { @class = "form-control", type = "number", min = "1", placeholder = "Id de la sucursal" })
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Caja chica (Id)</label>
+                    @Html.TextBoxFor(x => x.CajaChicaId, new { @class = "form-control", type = "number", min = "1", placeholder = "Id de la caja abierta" })
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Monto inicial</label>
+                    @Html.TextBoxFor(x => x.MontoInicial, new { @class = "form-control", type = "number", step = "0.01", min = "0", placeholder = "0.00" })
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Efectivo contado</label>
+                    @Html.TextBoxFor(x => x.EfectivoContado, new { @class = "form-control", type = "number", step = "0.01", min = "0", placeholder = "0.00" })
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <label>Observaciones</label>
+                    @Html.TextAreaFor(x => x.Observaciones, new { @class = "form-control", rows = "3", placeholder = "Observaciones del corte" })
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <input type="button" value="Realizar corte" class="btn btn-success" onclick="GuardarCorte()" />
+                    <a href="/Corte/Corte" class="btn btn-warning">Limpiar</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12 table-responsive">
+                <div class="mb-3">
+                    <table id="tblCorte"></table>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    $(function () {
+        $("#frmCorte").validate({
+            rules: {
+                "SucursalId": { required: true, min: 1 },
+                "CajaChicaId": { required: true, min: 1 },
+                "MontoInicial": { required: true, min: 0 },
+                "EfectivoContado": { required: true, min: 0 }
+            },
+            messages: {
+                "SucursalId": { required: "La sucursal es requerida." },
+                "CajaChicaId": { required: "La caja chica es requerida." },
+                "MontoInicial": { required: "El monto inicial es requerido." },
+                "EfectivoContado": { required: "El efectivo contado es requerido." }
+            },
+            errorElement: "span",
+            errorClass: "text-danger",
+            highlight: function (element) {
+                $(element).addClass("is-invalid").removeClass("is-valid");
+            },
+            unhighlight: function (element) {
+                $(element).removeClass("is-invalid").addClass("is-valid");
+            },
+            errorPlacement: function (error, element) {
+                error.insertAfter(element);
+            }
+        });
+    });
+
+    $(document).ready(function () {
+        var tabla = new DataTable('#tblCorte', {
+            columns: [
+                { data: 'Id', title: 'ID', visible: false },
+                { data: 'FechaCorte', title: 'Fecha', render: function (data) { return formatDate(data); } },
+                { data: 'SucursalNombre', title: 'Sucursal' },
+                { data: 'UsuarioNombre', title: 'Cajero' },
+                { data: 'MontoInicial', title: 'Monto inicial', render: function (data) { return formatMoney(data); } },
+                { data: 'TotalVentas', title: 'Ventas', render: function (data) { return formatMoney(data); } },
+                { data: 'TotalEfectivo', title: 'Efectivo', render: function (data) { return formatMoney(data); } },
+                { data: 'TotalTarjeta', title: 'Tarjeta', render: function (data) { return formatMoney(data); } },
+                { data: 'TotalTransferencia', title: 'Transferencia', render: function (data) { return formatMoney(data); } },
+                { data: 'Salidas', title: 'Salidas', render: function (data) { return formatMoney(data); } },
+                { data: 'EfectivoEsperado', title: 'Esperado', render: function (data) { return formatMoney(data); } },
+                { data: 'EfectivoContado', title: 'Contado', render: function (data) { return formatMoney(data); } },
+                { data: 'Diferencia', title: 'Diferencia', render: function (data) { return formatMoney(data); } },
+                { data: 'Observaciones', title: 'Observaciones' },
+                {
+                    data: 'Id', title: 'Acciones', render: function (data) {
+                        return '<button type="button" class="btn btn-sm btn-outline-primary" onclick="VerCorte(' + data + ')"><i class="fas fa-eye"></i></button>';
+                    }
+                },
+                { data: 'Estatus', title: 'Estatus', visible: false }
+            ],
+            language: {
+                url: "/Content/datatables/i18n/es-ES.json"
+            }
+        });
+        ConsultarTodosLosCortes();
+    });
+
+    function GuardarCorte() {
+        if ($("#frmCorte").valid()) {
+            Swal.fire({
+                title: 'Registrando corte...',
+                text: 'Por favor espere',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            var corte = {
+                Id: 0,
+                SucursalId: parseInt($("#SucursalId").val()) || 0,
+                UsuarioId: parseInt($("#UsuarioId").val()) || 0,
+                CajaChicaId: parseInt($("#CajaChicaId").val()) || 0,
+                MontoInicial: parseFloat($("#MontoInicial").val()) || 0,
+                EfectivoContado: parseFloat($("#EfectivoContado").val()) || 0,
+                Observaciones: $("#Observaciones").val(),
+                CreadoPor: $("#CreadoPor").val(),
+                FechaCreacion: new Date().toISOString(),
+                ModificadoPor: null,
+                FechaModificacion: null,
+                Estatus: true
+            };
+
+            PostMVC('/Corte/GuardarCorte', corte, function (response) {
+                Swal.close();
+
+                if (response.IsSuccess) {
+                    Swal.fire({
+                        title: '¡Éxito!',
+                        text: response.Message,
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        background: 'white',
+                        iconColor: '#4e73df'
+                    }).then(() => {
+                        window.location.href = '/Corte/Corte';
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: response.Message,
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar',
+                        background: 'white',
+                        confirmButtonColor: '#4e73df'
+                    });
+                }
+            });
+        }
+    }
+
+    function ConsultarTodosLosCortes() {
+        GetMVC("/Corte/ConsultarTodosLosCortes", function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+
+            if (result.IsSuccess) {
+                MapingPropertiesDataTable("tblCorte", result.Response);
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: result.Message,
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar',
+                    background: 'white',
+                    confirmButtonColor: '#4e73df'
+                });
+            }
+        });
+    }
+
+    function VerCorte(id) {
+        GetMVC("/Corte/ConsultarCortePorId?id=" + id, function (r) {
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+
+            if (result.IsSuccess && result.Response) {
+                var c = result.Response;
+                var html = '<div class="text-start">';
+                html += '<p><strong>Sucursal:</strong> ' + (c.SucursalNombre || '') + '</p>';
+                html += '<p><strong>Cajero:</strong> ' + (c.UsuarioNombre || '') + '</p>';
+                html += '<p><strong>Monto inicial:</strong> ' + formatMoney(c.MontoInicial) + '</p>';
+                html += '<p><strong>Efectivo esperado:</strong> ' + formatMoney(c.EfectivoEsperado) + '</p>';
+                html += '<p><strong>Efectivo contado:</strong> ' + formatMoney(c.EfectivoContado) + '</p>';
+                html += '<p><strong>Diferencia:</strong> ' + formatMoney(c.Diferencia) + '</p>';
+                html += '<p><strong>Observaciones:</strong> ' + (c.Observaciones || '') + '</p>';
+                html += '</div>';
+                Swal.fire({
+                    title: 'Detalle del corte #' + c.Id,
+                    html: html,
+                    icon: 'info',
+                    confirmButtonText: 'Cerrar',
+                    confirmButtonColor: '#4e73df'
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: result.Message || 'No se encontró el corte.',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar',
+                    background: 'white',
+                    confirmButtonColor: '#4e73df'
+                });
+            }
+        });
+    }
+</script>

@@ -1,0 +1,231 @@
+﻿@{
+    ViewBag.Title = "Reportes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="https://cdn.datatables.net/2.3.7/js/dataTables.js"></script>
+<link href="https://cdn.datatables.net/2.3.7/css/dataTables.dataTables.css" rel="stylesheet" />
+
+<div class="form-section">
+    <h3 class="section-title"><i class="fas fa-chart-line me-2"></i>Reportes</h3>
+
+    <form id="frmReporte" name="frmReporte" method="get">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label>Tipo de reporte</label>
+                    <select id="TipoReporte" class="form-control">
+                        <option value="periodo">Ventas por periodo</option>
+                        <option value="sucursal">Ventas por sucursal</option>
+                        <option value="cajero">Ventas por cajero</option>
+                        <option value="utilidad">Utilidad por producto</option>
+                        <option value="masvendidos">Productos más vendidos</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-3">
+                    <label>Fecha inicio</label>
+                    <input type="date" id="FechaInicio" class="form-control" />
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-3">
+                    <label>Fecha fin</label>
+                    <input type="date" id="FechaFin" class="form-control" />
+                </div>
+            </div>
+            <div class="col-md-2" id="contenedorSucursal">
+                <div class="mb-3">
+                    <label>Sucursal (opcional)</label>
+                    <input type="number" id="SucursalId" class="form-control" min="0" value="0" />
+                </div>
+            </div>
+            <div class="col-md-2" id="contenedorTop" style="display:none;">
+                <div class="mb-3">
+                    <label>Top</label>
+                    <input type="number" id="Top" class="form-control" min="1" value="10" />
+                </div>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <div class="mb-3">
+                    <input type="button" value="Generar" class="btn btn-success" onclick="GenerarReporte()" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12 table-responsive">
+                <div class="mb-3">
+                    <table id="tblReporte" class="display" style="width:100%"></table>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    var dtReporte = null;
+
+    // Definición de cada reporte: endpoint MVC y columnas del DataTable.
+    var definiciones = {
+        periodo: {
+            url: '/Reporte/ConsultarVentasPorPeriodo',
+            columnas: [
+                { data: 'Fecha', title: 'Fecha', render: function (d) { return d ? formatDate(d) : ''; } },
+                { data: 'Folio', title: 'Folio' },
+                { data: 'SucursalNombre', title: 'Sucursal' },
+                { data: 'CajeroNombre', title: 'Cajero' },
+                { data: 'MetodoPago', title: 'Método de pago' },
+                { data: 'Subtotal', title: 'Subtotal', render: money },
+                { data: 'Impuesto', title: 'Impuesto', render: money },
+                { data: 'Total', title: 'Total', render: money }
+            ]
+        },
+        sucursal: {
+            url: '/Reporte/ConsultarVentasPorSucursal',
+            columnas: [
+                { data: 'SucursalNombre', title: 'Sucursal' },
+                { data: 'NumeroVentas', title: 'Número de ventas' },
+                { data: 'Total', title: 'Total', render: money }
+            ]
+        },
+        cajero: {
+            url: '/Reporte/ConsultarVentasPorCajero',
+            columnas: [
+                { data: 'CajeroNombre', title: 'Cajero' },
+                { data: 'NumeroVentas', title: 'Número de ventas' },
+                { data: 'Total', title: 'Total', render: money }
+            ]
+        },
+        utilidad: {
+            url: '/Reporte/ConsultarUtilidad',
+            columnas: [
+                { data: 'ProductoNombre', title: 'Producto' },
+                { data: 'CantidadVendida', title: 'Cantidad vendida' },
+                { data: 'TotalVenta', title: 'Total venta', render: money },
+                { data: 'TotalCosto', title: 'Total costo', render: money },
+                { data: 'Utilidad', title: 'Utilidad', render: money }
+            ]
+        },
+        masvendidos: {
+            url: '/Reporte/ConsultarMasVendidos',
+            columnas: [
+                { data: 'ProductoNombre', title: 'Producto' },
+                { data: 'CantidadVendida', title: 'Cantidad vendida' },
+                { data: 'TotalVenta', title: 'Total venta', render: money }
+            ]
+        }
+    };
+
+    function money(data) {
+        return (data === null || data === undefined || data === '') ? '' : formatMoney(data);
+    }
+
+    function toInputDate(d) {
+        var month = '' + (d.getMonth() + 1);
+        var day = '' + d.getDate();
+        var year = d.getFullYear();
+
+        if (month.length < 2) { month = '0' + month; }
+        if (day.length < 2) { day = '0' + day; }
+
+        return [year, month, day].join('-');
+    }
+
+    $(document).ready(function () {
+        var hoy = new Date();
+        var primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+
+        $("#FechaInicio").val(toInputDate(primerDia));
+        $("#FechaFin").val(toInputDate(hoy));
+
+        $("#TipoReporte").on("change", function () {
+            var tipo = $(this).val();
+            $("#contenedorSucursal").toggle(tipo === 'periodo');
+            $("#contenedorTop").toggle(tipo === 'masvendidos');
+        });
+
+        GenerarReporte();
+    });
+
+    function GenerarReporte() {
+        var tipo = $("#TipoReporte").val();
+        var def = definiciones[tipo];
+
+        if (!def) {
+            return;
+        }
+
+        var fechaInicio = $("#FechaInicio").val();
+        var fechaFin = $("#FechaFin").val();
+
+        if (!fechaInicio || !fechaFin) {
+            Swal.fire({
+                title: 'Filtros requeridos',
+                text: 'Debe indicar la fecha de inicio y la fecha de fin.',
+                icon: 'warning',
+                confirmButtonText: 'Aceptar',
+                confirmButtonColor: '#4e73df'
+            });
+            return;
+        }
+
+        var params = "fechaInicio=" + encodeURIComponent(fechaInicio) +
+            "&fechaFin=" + encodeURIComponent(fechaFin);
+
+        if (tipo === 'periodo') {
+            params += "&sucursalId=" + ($("#SucursalId").val() || 0);
+        }
+
+        if (tipo === 'masvendidos') {
+            params += "&top=" + ($("#Top").val() || 10);
+        }
+
+        Swal.fire({
+            title: 'Generando...',
+            text: 'Por favor espere',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        GetMVC(def.url + "?" + params, function (r) {
+            Swal.close();
+
+            var result = typeof r == 'string' ? JSON.parse(r) : r;
+
+            if (result && result.IsSuccess) {
+                RenderTabla(def, result.Response);
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: (result && result.Message) ? result.Message : 'No fue posible generar el reporte.',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar',
+                    confirmButtonColor: '#4e73df'
+                });
+            }
+        });
+    }
+
+    function RenderTabla(def, data) {
+        if (dtReporte) {
+            dtReporte.destroy();
+            $("#tblReporte").empty();
+        }
+
+        dtReporte = new DataTable('#tblReporte', {
+            columns: def.columnas,
+            language: {
+                url: "/Content/datatables/i18n/es-ES.json"
+            }
+        });
+
+        if (data && data.length > 0) {
+            dtReporte.rows.add(data).draw();
+        } else {
+            dtReporte.draw();
+        }
+    }
+</script>

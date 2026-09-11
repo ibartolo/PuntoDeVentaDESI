@@ -1,0 +1,27 @@
+CREATE TABLE [dbo].[Venta]
+(
+    [Id] BIGINT IDENTITY (1, 1) NOT NULL,
+    [EmpresaId] BIGINT NOT NULL,
+    [SucursalId] BIGINT NOT NULL,
+    [UsuarioId] BIGINT NOT NULL,
+    [ClienteId] BIGINT NULL,
+    [CajaChicaId] BIGINT NULL,
+    [Folio] NVARCHAR (50) NULL,
+    [FechaVenta] DATETIME CONSTRAINT [DF_Venta_FechaVenta] DEFAULT (GETDATE()) NOT NULL,
+    [MetodoPago] NVARCHAR (20) NOT NULL,
+    [Subtotal] DECIMAL (18, 4) CONSTRAINT [DF_Venta_Subtotal] DEFAULT ((0)) NOT NULL,
+    [Impuesto] DECIMAL (18, 4) CONSTRAINT [DF_Venta_Impuesto] DEFAULT ((0)) NOT NULL,
+    [Total] DECIMAL (18, 4) CONSTRAINT [DF_Venta_Total] DEFAULT ((0)) NOT NULL,
+    [Estatus] BIT CONSTRAINT [DF_Venta_Estatus] DEFAULT ((1)) NOT NULL,
+    [CreadoPor] NVARCHAR (25) NOT NULL,
+    [FechaCreacion] DATETIME CONSTRAINT [DF_Venta_FechaCreacion] DEFAULT (GETDATE()) NOT NULL,
+    [ModificadoPor] NVARCHAR (25) NULL,
+    [FechaModificacion] DATETIME NULL,
+    CONSTRAINT [PK_Venta] PRIMARY KEY CLUSTERED ([Id] ASC),
+    CONSTRAINT [FK_Venta_Empresa] FOREIGN KEY ([EmpresaId]) REFERENCES [dbo].[Empresa] ([Id]),
+    CONSTRAINT [FK_Venta_Sucursal] FOREIGN KEY ([SucursalId]) REFERENCES [dbo].[Sucursal] ([Id]),
+    CONSTRAINT [FK_Venta_Usuario] FOREIGN KEY ([UsuarioId]) REFERENCES [dbo].[Usuario] ([Id]),
+    CONSTRAINT [FK_Venta_Cliente] FOREIGN KEY ([ClienteId]) REFERENCES [dbo].[Cliente] ([Id]),
+    CONSTRAINT [FK_Venta_CajaChica] FOREIGN KEY ([CajaChicaId]) REFERENCES [dbo].[CajaChica] ([Id]),
+    CONSTRAINT [CK_Venta_MetodoPago] CHECK ([MetodoPago] IN (N'Efectivo', N'Tarjeta', N'Transferencia'))
+);
