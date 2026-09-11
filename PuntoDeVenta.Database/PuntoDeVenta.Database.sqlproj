@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Name>PuntoDeVenta.Database</Name>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>4.1</ProjectVersion>
+    <ProjectGuid>{d3e64f71-2e20-4d85-9f74-bf54c2f9d19a}</ProjectGuid>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql150DatabaseSchemaProvider</DSP>
+    <OutputType>Database</OutputType>
+    <RootPath>
+    </RootPath>
+    <RootNamespace>PuntoDeVenta.Database</RootNamespace>
+    <AssemblyName>PuntoDeVenta.Database</AssemblyName>
+    <ModelCollation>1033, CI</ModelCollation>
+    <DefaultFileStructure>BySchemaAndSchemaType</DefaultFileStructure>
+    <DeployToDatabase>True</DeployToDatabase>
+    <TargetDatabaseSet>True</TargetDatabaseSet>
+    <TargetDatabaseName>db_9c7990_puntoventadev</TargetDatabaseName>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">17.0</VisualStudioVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="Functions\" />
+    <Folder Include="Security\" />
+    <Folder Include="Views\" />
+    <Folder Include="Tables\" />
+    <Folder Include="Tables\dbo\" />
+    <Folder Include="StoredProcedures\" />
+    <Folder Include="StoredProcedures\dbo\" />
+    <Folder Include="Scripts\" />
+    <Folder Include="Scripts\PreDeploy\" />
+    <Folder Include="Scripts\PostDeploy\" />
+    <Folder Include="Seed\" />
+    <Folder Include="Scripts\Migrations\" />
+    <Folder Include="Scripts\Deploy\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Build Include="Tables\dbo\Empresa.sql" />
+    <Build Include="Tables\dbo\Usuario.sql" />
+    <Build Include="Tables\dbo\Marca.sql" />
+    <Build Include="StoredProcedures\dbo\sp_Usuario_ObtenerParaLogin.sql" />
+    <Build Include="StoredProcedures\dbo\sp_Marca_Insertar.sql" />
+    <Build Include="StoredProcedures\dbo\sp_Marca_Consultar.sql" />
+    <Build Include="StoredProcedures\dbo\sp_Marca_Listar.sql" />
+    <Build Include="StoredProcedures\dbo\sp_Marca_Actualizar.sql" />
+    <Build Include="StoredProcedures\dbo\sp_Marca_EliminarLogico.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <PreDeploy Include="Scripts\PreDeploy\Script.PreDeployment.sql" />
+    <PostDeploy Include="Scripts\PostDeploy\Script.PostDeployment.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Functions\README.md" />
+    <None Include="Views\README.md" />
+    <None Include="Security\README.md" />
+    <None Include="Seed\seed-dev-user.sql" />
+    <None Include="Scripts\Migrations\001-initial-migration-template.sql" />
+    <None Include="Scripts\Deploy\Publish.Template.publish.xml" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets')" />
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v17.0\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets') and Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v17.0\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets')" />
+</Project>

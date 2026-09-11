@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<settings>
+  <add key="sConSql" value="Server=__SQL_HOST__;Database=db_9c7990_puntoventadev;User Id=__SQL_USER__;Password=__SQL_PASSWORD__;Encrypt=True;TrustServerCertificate=True;" />
+  <add key="connectionStrings:cCon" value="Server=__SQL_HOST__;Database=db_9c7990_puntoventadev;User Id=__SQL_USER__;Password=__SQL_PASSWORD__;Encrypt=True;TrustServerCertificate=True;" />
+  <add key="client_id" value="PuntoDeVentaMVC" />
+  <add key="client_secret" value="__SET_IN_ENV_OR_DEPLOYMENT__" />
+  <add key="machineKey.validationKey" value="__SET_IN_ENV_OR_DEPLOYMENT__" />
+  <add key="machineKey.decryptionKey" value="__SET_IN_ENV_OR_DEPLOYMENT__" />
+</settings>

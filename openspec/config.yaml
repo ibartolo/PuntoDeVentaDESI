@@ -1,0 +1,61 @@
+# openspec/config.yaml
+schema: spec-driven
+
+context: |
+  Tech stack: ASP.NET MVC 5 + ASP.NET Web API 5 (.NET Framework 4.8, C# 7.3), SQL Server, ADO.NET + stored procedures.
+  Architecture: 3-project solution (Entities / MVC / WebApi), ref. skill "netframework-mvc-webapi".
+  Auth: OAuth2 bearer token via FormsAuthentication cookie; ModelResponse envelope for all API responses.
+  Domain: Punto de Venta multi-sucursal (ventas, stock, caja chica, cortes, cancelaciones, reportes).
+  Testing: no test runner detected yet (greenfield project, no code present).
+  Style: no linter/formatter detected yet.
+
+strict_tdd: false
+
+testing:
+  strict_tdd_mode: false
+  detected: "2026-09-10"
+  test_runner:
+    command: null
+    framework: null
+  test_layers:
+    unit: false
+    integration: false
+    e2e: false
+  coverage:
+    available: false
+    command: null
+  quality_tools:
+    linter: null
+    type_checker: null
+    formatter: null
+  notes: >-
+    Proyecto greenfield: solo existe Propuesta.txt y la skill de referencia
+    netframework-mvc-webapi/SKILL.md. No hay solución .sln ni proyectos .csproj
+    todavía, por lo que no se detectó xUnit/NUnit/MSTest ni herramientas de calidad.
+    Strict TDD Mode deshabilitado por falta de test runner; re-evaluar en cuanto
+    se genere el scaffold de la solución.
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Identify affected modules/packages
+    - Reference the netframework-mvc-webapi skill for structural conventions when applicable
+  specs:
+    - Use Given/When/Then format for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+    - Follow the 3-project topology (Entities / MVC / WebApi) and ModelResponse envelope from the local skill
+  tasks:
+    - Group tasks by phase (infrastructure, implementation, testing)
+    - Use hierarchical numbering (1.1, 1.2, etc.)
+    - Keep tasks small enough to complete in one session
+  apply:
+    - Follow existing code patterns and conventions
+    - Load the netframework-mvc-webapi skill for .NET Framework MVC/WebApi implementation tasks
+  verify:
+    - Run tests if test infrastructure exists
+    - Compare implementation against every spec scenario
+  archive:
+    - Warn before merging destructive deltas (large removals)

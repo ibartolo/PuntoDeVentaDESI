@@ -1,0 +1,41 @@
+@model PuntoDeVenta.MVC.Models.MarcaViewModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Detalle de Marca</title>
+</head>
+<body>
+    <h2>Detalle de Marca</h2>
+
+    @if (Model != null)
+    {
+        <dl>
+            <dt>Id</dt>
+            <dd>@Model.Id</dd>
+
+            <dt>Nombre</dt>
+            <dd>@Model.Nombre</dd>
+
+            <dt>Descripción</dt>
+            <dd>@Model.Descripcion</dd>
+
+            <dt>Estatus</dt>
+            <dd>@(Model.Estatus ? "Activa" : "Inactiva")</dd>
+        </dl>
+    }
+
+    <p>
+        @if (Model != null)
+        {
+            @Html.ActionLink("Editar", "Edit", new { id = Model.Id }) @:|
+            @Html.ActionLink("Desactivar", "Delete", new { id = Model.Id }) @:|
+        }
+        @Html.ActionLink("Volver", "Index")
+    </p>
+</body>
+</html>

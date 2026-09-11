@@ -1,0 +1,151 @@
+Propuesta: Punto de Venta Básico
+Stack
+MVC .NET Framework (frontend)
+
+WebAPI .NET Framework (backend)
+
+SQL Server
+
+Alcance
+Punto de venta web multi-sucursal. Sin facturación fiscal, sin órdenes de compra formales, sin devoluciones a proveedor. Solo ventas, notas y reportes.
+
+Convenciones generales
+Auditoría en todas las entidades: quién creó/cuándo, quién actualizó/cuándo.
+
+Borrado lógico en todas las entidades (sin borrado físico).
+
+Precios globales (mismos en todas las sucursales).
+
+Entidades
+Usuario
+Campos: usuario, contraseña, teléfono, correo, foto de perfil.
+
+Relación con roles (puede tener uno o varios).
+
+Relación con sucursales (puede tener una o varias).
+
+Al iniciar sesión, si tiene varias sucursales, selecciona en cuál va a trabajar.
+
+Todas las operaciones se registran en la sucursal activa.
+
+Rol
+Roles básicos precargados, editables y ampliables por la empresa.
+
+Permisos por acción: guardar, actualizar, imprimir, autorizar, etc.
+
+El permiso de autorizar habilita acciones de autorización dentro de los módulos (cancelaciones, ajustes, etc.).
+
+Módulo
+Tabla fija: nombre, URL parcial.
+
+Se cargan en el menú según el rol del usuario.
+
+Sucursal
+Multi-sucursal.
+
+Stock independiente por sucursal.
+
+Precios globales.
+
+Cliente
+Registro de clientes.
+
+Cliente especial "Público General".
+
+Base para clientes frecuentes y futuro programa de lealtad (solo contemplado, sin implementar).
+
+Producto
+Campos: nombre, descripción, foto, marca (real o genérica), categoría, stock mínimo, stock disponible por sucursal.
+
+Código: barras o QR (uno solo, no ambos).
+
+Categorías jerárquicas tipo supermercado (bebés, ropa, carnes, etc.).
+
+Tipo: comprado a proveedor o fabricado/sin proveedor.
+
+Precio (historial)
+Campos: precio de compra, precio de venta sugerido, precio de venta.
+
+Historial de precios por producto; solo uno activo a la vez.
+
+El precio activo lo modifica quien tenga permiso al módulo.
+
+Mismo precio en todas las sucursales.
+
+Proveedor
+Un producto puede tener varios proveedores.
+
+Historial de compras: fecha, proveedor, costo, cantidad.
+
+Stock
+Ingreso de stock desde módulo, aplicado a la sucursal activa del usuario.
+
+Permite ajustes negativos (merma, robo, conteo físico) y devoluciones.
+
+Caja chica
+Por usuario + sucursal.
+
+Monto inicial para dar cambio; debe permanecer intacto.
+
+Sin corte previo no se puede abrir una nueva caja chica.
+
+Salidas de dinero: N por día, con comentario, fecha/hora y monto.
+
+Las salidas salen de los ingresos, no de la caja chica.
+
+Límite: no pueden superar el 50% de los ingresos totales.
+
+Reembolso en efectivo por venta con tarjeta: se registra como salida justificada, con evidencia fotográfica opcional.
+
+Corte de caja
+Varios cortes al día.
+
+Cada caja chica se cierra con su corte.
+
+Al hacer corte, la caja chica se cierra y se debe crear una nueva para seguir vendiendo.
+
+Contenido: ventas del periodo por método de pago, monto inicial, salidas, efectivo esperado vs contado, diferencias.
+
+Adjuntos por método de pago:
+
+Tarjeta: folio de cobro + ticket del cobro + ticket del sistema.
+
+Transferencia: comprobante (foto/archivo).
+
+Efectivo: ticket del sistema.
+
+Venta
+Un solo método de pago por venta: efectivo, transferencia o tarjeta.
+
+Catálogo de productos por categorías.
+
+Escáner de código de barras/QR usando la cámara del dispositivo.
+
+Abre cajón de dinero al concretar la venta.
+
+Cancelación / Devolución
+Total o parcial.
+
+Devolución a stock: opcional por producto (puede no regresar si se echó a perder o se descompuso).
+
+Reembolso:
+
+Venta en efectivo o transferencia: cliente elige forma (total o parcial).
+
+Venta con tarjeta: reembolso forzado en efectivo, registrado como salida justificada con evidencia.
+
+Se registra quién cancela y quién autoriza.
+
+Módulos del sistema
+Usuarios, Roles, Módulos, Sucursales, Clientes, Productos, Categorías, Proveedores, Compras, Stock, Caja chica, Cortes, Ventas, Cancelaciones, Reportes.
+
+Reportes (esta versión)
+Ventas por periodo.
+
+Ventas por sucursal.
+
+Ventas por cajero.
+
+Utilidad.
+
+Productos más vendidos.

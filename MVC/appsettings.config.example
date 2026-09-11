@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<settings>
+  <add key="BaseUriWebApi" value="https://localhost:00000/" />
+  <add key="client_id" value="PuntoDeVentaMVC" />
+  <add key="client_secret" value="__SET_IN_ENV_OR_TRANSFORM__" />
+  <add key="machineKey.validationKey" value="__SET_IN_ENV_OR_DEPLOYMENT__" />
+  <add key="machineKey.decryptionKey" value="__SET_IN_ENV_OR_DEPLOYMENT__" />
+</settings>
